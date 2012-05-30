@@ -146,7 +146,7 @@ public class Schelling{
   }
 
   public static void main(String args[]){
-    int n = 100;
+    int n = 500;
     int w = 3;
     int numSteps = 0;
     Schelling torus = new Schelling(n,w);
