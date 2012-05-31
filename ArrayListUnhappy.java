@@ -1,9 +1,10 @@
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
 import java.awt.Point;
 
 public class ArrayListUnhappy implements UnhappyCollection{
-  private ArrayList<Point> uh;
+  private List<Point> uh;
   private Random rand;
 
   public ArrayListUnhappy(){
@@ -23,6 +24,10 @@ public class ArrayListUnhappy implements UnhappyCollection{
   public Point getRandom(){
     int index = rand.nextInt(uh.size());
     return uh.get(index);
+  }
+
+  public int size(){
+    return uh.size();
   }
 
   public boolean isEmpty(){

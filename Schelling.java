@@ -2,12 +2,12 @@ import java.util.Random;
 import java.awt.Point;
 
 public class Schelling{
-	public static enum type {X,O};
+  private static enum type {X,O};
   private int N, W;
   private Random rand;
   type[][] torus;
   int[][] biases;
-  ArrayListUnhappy uhx, uho;
+  UnhappyCollection uhx, uho;
 
   //Java's mod sucks
   private int mod(int a, int b){
@@ -16,16 +16,15 @@ public class Schelling{
   }
 
   public Schelling(int n, int w){
-      N = n;
-      W = w;
-      rand = new Random();
-      torus = new type[n][n];
-      biases = new int[n][n];
-      uhx = new ArrayListUnhappy();
-      uho = new ArrayListUnhappy();
-
-      initTorus();
-      initBiases();
+    N = n;
+    W = w;
+    rand = new Random();
+    torus = new type[n][n];
+    biases = new int[n][n];
+    uhx = new HashList();
+    uho = new HashList();
+    initTorus();
+    initBiases();
   }
 
   //Populates the torus randomly
@@ -40,25 +39,36 @@ public class Schelling{
     }
   }
 
-  //Compute biases for the initial configuration  
-  private void initBiases(){
-    for (int i = 0; i < N; i++){
-      for (int j = 0; j < N; j++){
-        biases[i][j] = 0;
+  private void recalcBiases(int minX, int maxX, int minY, int maxY){
+    for (int mi = minX; mi < maxX; mi++){
+      int i = mod(mi,N);
+      for (int mj = minY; mj < maxY; mj++){
+        int j = mod(mj,N);
+        int bias = 0;
         for (int x = -W; x <= W; x++){
           for (int y = -W; y <= W; y++){
             if (torus[mod(i+x,N)][mod(j+y,N)] == type.X)
-              biases[i][j]++;
+              bias++;
             else
-              biases[i][j]--;
+              bias--;
           }
         }
-        if (biases[i][j] < 0 && torus[i][j] == type.X)
-            uhx.add(i,j);
-        else if (biases[i][j] > 0 && torus[i][j] == type.O)
-            uho.add(i,j);
+        if (biases[i][j] < 0 && torus[i][j] == type.X && bias >= 0)
+          uhx.remove(i,j);
+        else if (biases[i][j] > 0 && torus[i][j] == type.O && bias <= 0)
+          uho.remove(i,j);
+        else if (biases[i][j] >= 0 && torus[i][j] == type.X && bias < 0)
+          uhx.add(i,j);
+        else if (biases[i][j] <= 0 && torus[i][j] == type.O && bias > 0) 
+          uho.add(i,j);
+        biases[i][j] = bias;
       }
     }
+  }
+
+  //Compute biases for the initial configuration  
+  private void initBiases(){
+    recalcBiases(0,N,0,N);
   }
 
   private void singleStep(){
@@ -74,56 +84,8 @@ public class Schelling{
     uhx.remove(xi,xj);
     uho.remove(oi,oj);
 
-    int bias, i, j;
-    for (int mi = xi-W; mi <= xi+W; mi++){
-      i = mod(mi,N);
-      for (int mj = xj-W; mj <= xj+W; mj++){
-        j = mod(mj,N);
-        bias = 0;
-        for (int x = -W; x <= W; x++){
-          for (int y = -W; y <= W; y++){
-            if (torus[mod(i+x,N)][mod(j+y,N)] == type.X)
-              bias++;
-            else
-              bias--;
-          }
-        }
-        if (biases[i][j] < 0 && torus[i][j] == type.X && bias >= 0)
-          uhx.remove(i,j);
-        else if (biases[i][j] > 0 && torus[i][j] == type.O && bias <= 0)
-          uho.remove(i,j);
-        else if (biases[i][j] >= 0 && torus[i][j] == type.X && bias < 0)
-          uhx.add(i,j);
-        else if (biases[i][j] <= 0 && torus[i][j] == type.O && bias > 0) 
-          uho.add(i,j);
-        biases[i][j] = bias;
-      }
-    }
-
-    for (int mi = oi-W; mi <= oi+W; mi++){
-      i = mod(mi,N);
-      for (int mj = oj-W; mj <= oj+W; mj++){
-        j = mod(mj,N);
-        bias = 0;
-        for (int x = -W; x <= W; x++){
-          for (int y = -W; y <= W; y++){
-            if (torus[mod(i+x,N)][mod(j+y,N)] == type.X)
-              bias++;
-            else
-              bias--;
-          }
-        }
-        if (biases[i][j] < 0 && torus[i][j] == type.X && bias >= 0)
-          uhx.remove(i,j);
-        else if (biases[i][j] > 0 && torus[i][j] == type.O && bias <= 0)
-          uho.remove(i,j);
-        else if (biases[i][j] >= 0 && torus[i][j] == type.X && bias < 0)
-          uhx.add(i,j);
-        else if (biases[i][j] <= 0 && torus[i][j] == type.O && bias > 0) 
-          uho.add(i,j);
-        biases[i][j] = bias;
-      }
-    }
+    recalcBiases(xi-W,xi+W,xj-W,xj+W);
+    recalcBiases(oi-W,oi+W,oj-W,oj+W);
   }
 
   private boolean isDone(){
@@ -145,15 +107,22 @@ public class Schelling{
     System.out.println(uho);
   }
 
+  private void printNumUnhappies(){
+    int x = uhx.size();
+    int o = uho.size();
+    System.out.println("x: " + x + ", o: " + o);
+  }
+
   public static void main(String args[]){
-    int n = 500;
-    int w = 3;
+    int n = 1000;
+    int w = 1;
     int numSteps = 0;
     Schelling torus = new Schelling(n,w);
     while (!torus.isDone()){
       torus.singleStep();
       numSteps++;
       System.out.println(numSteps);
+      torus.printNumUnhappies();
     }
   }
 }
